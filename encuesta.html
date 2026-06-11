@@ -432,7 +432,7 @@
       console.error('EmailJS error:', err);
       btn.textContent = 'Enviar encuesta →';
       btn.disabled = false;
-      alert('Hubo un problema al enviar. Por favor intentá de nuevo en unos instantes.');
+      alert('Error EmailJS: ' + JSON.stringify(err));
     }
   });
 </script>
