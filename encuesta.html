@@ -353,7 +353,7 @@
   const EMAILJS_TEMPLATE_ID = 'tfqqvcj';
   // ════════════════════════════════════════════════════════════════
 
-  emailjs.init(EMAILJS_PUBLIC_KEY);
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
 
   // ── Leer ID_Encuesta desde URL (?id=...) ────────────────────────
   const idEncuesta = new URLSearchParams(window.location.search).get('id') || '';
@@ -407,7 +407,20 @@
     btn.disabled = true;
 
     try {
-      await emailjs.sendForm(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, this);
+      const f = this;
+      const params = {
+        id_encuesta: f.querySelector('[name="id_encuesta"]').value,
+        p1: (f.querySelector('[name="p1"]:checked') || {}).value || '',
+        p2: (f.querySelector('[name="p2"]:checked') || {}).value || '',
+        p3: (f.querySelector('[name="p3"]:checked') || {}).value || '',
+        p4: (f.querySelector('[name="p4"]:checked') || {}).value || '',
+        p5: (f.querySelector('[name="p5"]:checked') || {}).value || '',
+        p6: (f.querySelector('[name="p6"]:checked') || {}).value || '',
+        p7: (f.querySelector('[name="p7"]:checked') || {}).value || '',
+        p8: (f.querySelector('[name="p8"]:checked') || {}).value || '',
+        p9: f.querySelector('[name="p9"]').value || '',
+      };
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
 
       if (idEncuesta) localStorage.setItem(LS_KEY, 'done');
       document.getElementById('form').style.display      = 'none';
