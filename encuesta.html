@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encuesta de Satisfacción — DIESA</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #EEF2F7;
+      color: #1A3A5C;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #1A3A5C 0%, #0D2440 100%);
+      color: white;
+      padding: 28px 20px 24px;
+      text-align: center;
+    }
+    .header-logo {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: #F4A234;
+      margin-bottom: 4px;
+    }
+    .header-sub {
+      font-size: 14px;
+      opacity: 0.75;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Progress bar ── */
+    .progress-bar { background: #0D2440; height: 4px; }
+    .progress-fill {
+      height: 4px;
+      background: #F4A234;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    /* ── Container ── */
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+    }
+
+    /* ── Pregunta card ── */
+    .q-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(26,58,92,.08);
+      transition: border-left 0.2s;
+    }
+    .q-card.has-error  { border-left: 4px solid #E74C3C; }
+    .q-card.answered   { border-left: 4px solid #27AE60; }
+
+    .q-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .q-num {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      background: #1A3A5C;
+      color: white;
+      border-radius: 50%;
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 1px;
+    }
+    .q-text { font-size: 15px; color: #1A3A5C; }
+    .req { color: #E74C3C; margin-left: 2px; }
+
+    /* ── Escala 1-10 (NPS) ── */
+    .scale-10 { display: flex; flex-wrap: wrap; gap: 6px; }
+    .scale-10 input[type=radio] { display: none; }
+    .scale-10 label {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      border: 2px solid #D8E3EE;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 15px; font-weight: 700; color: #5A7A9A;
+      transition: all .15s; user-select: none;
+    }
+    .scale-10 label:hover { border-color: #1A3A5C; color: #1A3A5C; background: #EEF2F7; }
+    .scale-10 input:checked + label { background: #1A3A5C; border-color: #1A3A5C; color: white; }
+
+    /* ── Escala 1-5 ── */
+    .scale-5 { display: flex; gap: 8px; }
+    .scale-5 input[type=radio] { display: none; }
+    .scale-5 label {
+      flex: 1; padding: 11px 6px;
+      border-radius: 10px; border: 2px solid #D8E3EE;
+      text-align: center; cursor: pointer;
+      font-size: 15px; font-weight: 700; color: #5A7A9A;
+      transition: all .15s; user-select: none;
+    }
+    .scale-5 label:hover { border-color: #F4A234; color: #F4A234; background: #FFF8EE; }
+    .scale-5 input:checked + label { background: #F4A234; border-color: #F4A234; color: white; }
+
+    /* ── Si / No ── */
+    .sino { display: flex; gap: 12px; }
+    .sino input[type=radio] { display: none; }
+    .sino label {
+      flex: 1; padding: 13px;
+      border-radius: 10px; border: 2px solid #D8E3EE;
+      text-align: center; cursor: pointer;
+      font-size: 15px; font-weight: 700; color: #5A7A9A;
+      transition: all .15s; user-select: none;
+    }
+    .sino label:hover { border-color: #888; }
+    .sino input:checked + .lbl-si { background: #27AE60; border-color: #27AE60; color: white; }
+    .sino input:checked + .lbl-no { background: #E74C3C; border-color: #E74C3C; color: white; }
+
+    /* ── Escala labels ── */
+    .scale-hints {
+      display: flex; justify-content: space-between;
+      margin-top: 6px; font-size: 11px; color: #8A9BB0;
+    }
+
+    /* ── Textarea ── */
+    .q-textarea {
+      width: 100%; border: 2px solid #D8E3EE;
+      border-radius: 10px; padding: 12px 14px;
+      font-size: 14px; font-family: inherit;
+      color: #1A3A5C; resize: vertical; min-height: 110px;
+      outline: none; transition: border-color .2s;
+    }
+    .q-textarea:focus { border-color: #1A3A5C; }
+
+    /* ── Error message ── */
+    .err-msg { display: none; color: #E74C3C; font-size: 12px; margin-top: 8px; }
+    .has-error .err-msg { display: block; }
+
+    /* ── Submit ── */
+    .btn-submit {
+      display: block; width: 100%;
+      background: #F4A234; color: white;
+      border: none; padding: 17px;
+      border-radius: 12px; font-size: 16px; font-weight: 700;
+      cursor: pointer; margin-top: 6px;
+      transition: background .2s, transform .1s; letter-spacing: 0.3px;
+    }
+    .btn-submit:hover   { background: #E09020; }
+    .btn-submit:active  { transform: scale(.98); }
+    .btn-submit:disabled { background: #BDC9D6; cursor: not-allowed; }
+
+    /* ── Thank you ── */
+    #screen-ok, #screen-done {
+      display: none; background: white;
+      border-radius: 14px; padding: 48px 24px;
+      text-align: center; box-shadow: 0 2px 10px rgba(26,58,92,.08);
+    }
+    #screen-ok .icon, #screen-done .icon { font-size: 64px; margin-bottom: 20px; }
+    #screen-ok h2, #screen-done h2 { font-size: 24px; color: #1A3A5C; margin-bottom: 10px; }
+    #screen-ok p,  #screen-done p  { font-size: 15px; color: #5A7A9A; line-height: 1.6; }
+
+    @media (max-width: 480px) {
+      .scale-10 label { width: 38px; height: 38px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">DIESA</div>
+  <div class="header-sub">Encuesta de Satisfacción — Compra de Vehículo</div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+<div class="container">
+
+  <!-- ── Formulario ── -->
+  <form id="form" novalidate>
+
+    <!-- Campo oculto de identificación -->
+    <input type="hidden" name="id_encuesta" id="h-id">
+
+    <!-- P1 — NPS 1-10 -->
+    <div class="q-card" id="card-1">
+      <div class="q-label">
+        <div class="q-num">1</div>
+        <div class="q-text">Pensando en toda tu experiencia con nosotros durante la compra de tu vehículo, en una escala del 1 al 10, ¿qué tan dispuesto/a estarías a recomendar comprar en Diesa a un amigo? <span class="req">*</span></div>
+      </div>
+      <div class="scale-10">
+        <input type="radio" name="p1" id="p1-1"  value="1" ><label for="p1-1" >1</label>
+        <input type="radio" name="p1" id="p1-2"  value="2" ><label for="p1-2" >2</label>
+        <input type="radio" name="p1" id="p1-3"  value="3" ><label for="p1-3" >3</label>
+        <input type="radio" name="p1" id="p1-4"  value="4" ><label for="p1-4" >4</label>
+        <input type="radio" name="p1" id="p1-5"  value="5" ><label for="p1-5" >5</label>
+        <input type="radio" name="p1" id="p1-6"  value="6" ><label for="p1-6" >6</label>
+        <input type="radio" name="p1" id="p1-7"  value="7" ><label for="p1-7" >7</label>
+        <input type="radio" name="p1" id="p1-8"  value="8" ><label for="p1-8" >8</label>
+        <input type="radio" name="p1" id="p1-9"  value="9" ><label for="p1-9" >9</label>
+        <input type="radio" name="p1" id="p1-10" value="10"><label for="p1-10">10</label>
+      </div>
+      <div class="scale-hints"><span>Nada probable</span><span>Muy probable</span></div>
+      <div class="err-msg">Por favor seleccioná una opción.</div>
+    </div>
+
+    <!-- P2 — Vendedor 1-5 -->
+    <div class="q-card" id="card-2">
+      <div class="q-label">
+        <div class="q-num">2</div>
+        <div class="q-text">¿Cómo calificarías la atención de tu vendedor/a? <span class="req">*</span></div>
+      </div>
+      <div class="scale-5">
+        <input type="radio" name="p2" id="p2-1" value="1"><label for="p2-1">1</label>
+        <input type="radio" name="p2" id="p2-2" value="2"><label for="p2-2">2</label>
+        <input type="radio" name="p2" id="p2-3" value="3"><label for="p2-3">3</label>
+        <input type="radio" name="p2" id="p2-4" value="4"><label for="p2-4">4</label>
+        <input type="radio" name="p2" id="p2-5" value="5"><label for="p2-5">5</label>
+      </div>
+      <div class="scale-hints"><span>Muy malo</span><span>Excelente</span></div>
+      <div class="err-msg">Por favor seleccioná una opción.</div>
+    </div>
+
+    <!-- P3 — Si/No -->
+    <div class="q-card" id="card-3">
+      <div class="q-label">
+        <div class="q-num">3</div>
+        <div class="q-text">¿El estado en que recibiste tu vehículo cumplió con tus expectativas en cuanto limpieza y detalles? <span class="req">*</span></div>
+      </div>
+      <div class="sino">
+        <input type="radio" name="p3" id="p3-si" value="Si"><label class="lbl-si" for="p3-si">✓ Sí</label>
+        <input type="radio" name="p3" id="p3-no" value="No"><label class="lbl-no" for="p3-no">✗ No</label>
+      </div>
+      <div class="err-msg">Por favor seleccioná una opción.</div>
+    </div>
+
+    <!-- P4 — Si/No -->
+    <div class="q-card" id="card-4">
+      <div class="q-label">
+        <div class="q-num">4</div>
+        <div class="q-text">¿El proceso de contacto con Diesa fue ágil y sin inconvenientes? <span class="req">*</span></div>
+      </div>
+      <div class="sino">
+        <input type="radio" name="p4" id="p4-si" value="Si"><label class="lbl-si" for="p4-si">✓ Sí</label>
+        <input type="radio" name="p4" id="p4-no" value="No"><label class="lbl-no" for="p4-no">✗ No</label>
+      </div>
+      <div class="err-msg">Por favor seleccioná una opción.</div>
+    </div>
+
+    <!-- P5 — Si/No -->
+    <div class="q-card" id="card-5">
+      <div class="q-label">
+        <div class="q-num">5</div>
+        <div class="q-text">¿Recibiste información clara y relevante sobre el vehículo? <span class="req">*</span></div>
+      </div>
+      <div class="sino">
+        <input type="radio" name="p5" id="p5-si" value="Si"><label class="lbl-si" for="p5-si">✓ Sí</label>
+        <input type="radio" name="p5" id="p5-no" value="No"><label class="lbl-no" for="p5-no">✗ No</label>
+      </div>
+      <div class="err-msg">Por favor seleccioná una opción.</div>
+    </div>
+
+    <!-- P6 — Créditos 1-5 -->
+    <div class="q-card" id="card-6">
+      <div class="q-label">
+        <div class="q-num">6</div>
+        <div class="q-text">En general, ¿cómo calificarías el proceso de créditos? ¿Te resultó transparente y brindó tranquilidad durante el proceso? <span class="req">*</span></div>
+      </div>
+      <div class="scale-5">
+        <input type="radio" name="p6" id="p6-1" value="1"><label for="p6-1">1</label>
+        <input type="radio" name="p6" id="p6-2" value="2"><label for="p6-2">2</label>
+        <input type="radio" name="p6" id="p6-3" value="3"><label for="p6-3">3</label>
+        <input type="radio" name="p6" id="p6-4" value="4"><label for="p6-4">4</label>
+        <input type="radio" name="p6" id="p6-5" value="5"><label for="p6-5">5</label>
+      </div>
+      <div class="scale-hints"><span>Muy malo</span><span>Excelente</span></div>
+      <div class="err-msg">Por favor seleccioná una opción.</div>
+    </div>
+
+    <!-- P7 — Si/No -->
+    <div class="q-card" id="card-7">
+      <div class="q-label">
+        <div class="q-num">7</div>
+        <div class="q-text">¿Tu vendedor/a te proporcionó información sobre el kilometraje para el primer service y cómo agendar una cita en el taller? <span class="req">*</span></div>
+      </div>
+      <div class="sino">
+        <input type="radio" name="p7" id="p7-si" value="Si"><label class="lbl-si" for="p7-si">✓ Sí</label>
+        <input type="radio" name="p7" id="p7-no" value="No"><label class="lbl-no" for="p7-no">✗ No</label>
+      </div>
+      <div class="err-msg">Por favor seleccioná una opción.</div>
+    </div>
+
+    <!-- P8 — Escrituración 1-5 -->
+    <div class="q-card" id="card-8">
+      <div class="q-label">
+        <div class="q-num">8</div>
+        <div class="q-text">¿Cómo evaluarías la gestión de la escrituración de tu vehículo? ¿Se cumplieron los tiempos acordados? <span class="req">*</span></div>
+      </div>
+      <div class="scale-5">
+        <input type="radio" name="p8" id="p8-1" value="1"><label for="p8-1">1</label>
+        <input type="radio" name="p8" id="p8-2" value="2"><label for="p8-2">2</label>
+        <input type="radio" name="p8" id="p8-3" value="3"><label for="p8-3">3</label>
+        <input type="radio" name="p8" id="p8-4" value="4"><label for="p8-4">4</label>
+        <input type="radio" name="p8" id="p8-5" value="5"><label for="p8-5">5</label>
+      </div>
+      <div class="scale-hints"><span>Muy malo</span><span>Excelente</span></div>
+      <div class="err-msg">Por favor seleccioná una opción.</div>
+    </div>
+
+    <!-- P9 — Comentarios -->
+    <div class="q-card" id="card-9">
+      <div class="q-label">
+        <div class="q-num">9</div>
+        <div class="q-text">Comentarios Adicionales <span style="color:#8A9BB0;font-size:13px;">(opcional)</span></div>
+      </div>
+      <textarea class="q-textarea" name="p9" placeholder="Escribí aquí cualquier comentario adicional..."></textarea>
+    </div>
+
+    <button type="submit" class="btn-submit" id="btn-submit">Enviar encuesta →</button>
+
+  </form>
+
+  <!-- Pantalla de éxito -->
+  <div id="screen-ok">
+    <div class="icon">🎉</div>
+    <h2>¡Gracias por tu respuesta!</h2>
+    <p>Tu opinión es muy valiosa para nosotros.<br>Seguimos trabajando para mejorar tu experiencia en DIESA.</p>
+  </div>
+
+  <!-- Pantalla ya respondida -->
+  <div id="screen-done">
+    <div class="icon">✅</div>
+    <h2>Ya respondiste esta encuesta</h2>
+    <p>Tu opinión ya fue registrada.<br>¡Gracias por tomarte el tiempo!</p>
+  </div>
+
+</div><!-- /container -->
+
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  // ════════════════════════════════════════════════════════════════
+  // CONFIGURACIÓN EMAILJS  ← completar con tus datos de EmailJS
+  // ════════════════════════════════════════════════════════════════
+  const EMAILJS_PUBLIC_KEY  = 'QBqPJeJXcv7EnxJ_BrhBF';
+  const EMAILJS_SERVICE_ID  = 'jvelazquez@diesa.com.py';
+  const EMAILJS_TEMPLATE_ID = 'tfqqvcj';
+  // ════════════════════════════════════════════════════════════════
+
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+
+  // ── Leer ID_Encuesta desde URL (?id=...) ────────────────────────
+  const idEncuesta = new URLSearchParams(window.location.search).get('id') || '';
+  document.getElementById('h-id').value = idEncuesta;
+
+  // ── Prevenir doble envío (localStorage) ─────────────────────────
+  const LS_KEY = 'enc_' + idEncuesta;
+  if (idEncuesta && localStorage.getItem(LS_KEY) === 'done') {
+    document.getElementById('form').style.display        = 'none';
+    document.getElementById('screen-done').style.display = 'block';
+  }
+
+  // ── Progress bar ─────────────────────────────────────────────────
+  const OBLIGATORIAS = ['p1','p2','p3','p4','p5','p6','p7','p8'];
+  function actualizarProgress() {
+    const n = OBLIGATORIAS.filter(n =>
+      document.querySelector(`input[name="${n}"]:checked`)
+    ).length;
+    document.getElementById('progress').style.width =
+      Math.round(n / OBLIGATORIAS.length * 100) + '%';
+  }
+
+  document.getElementById('form').addEventListener('change', function(e) {
+    const name = e.target.name;
+    if (!name || !name.startsWith('p') || name === 'p9') return;
+    const card = document.getElementById('card-' + name.replace('p',''));
+    if (card) { card.classList.remove('has-error'); card.classList.add('answered'); }
+    actualizarProgress();
+  });
+
+  // ── Envío vía EmailJS ─────────────────────────────────────────────
+  document.getElementById('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    // Validar obligatorias
+    let valido = true;
+    OBLIGATORIAS.forEach(function(name) {
+      const card = document.getElementById('card-' + name.replace('p',''));
+      if (!document.querySelector(`input[name="${name}"]:checked`)) {
+        card.classList.add('has-error');
+        if (valido) { card.scrollIntoView({ behavior:'smooth', block:'center' }); }
+        valido = false;
+      } else {
+        card.classList.remove('has-error');
+      }
+    });
+    if (!valido) return;
+
+    const btn = document.getElementById('btn-submit');
+    btn.textContent = 'Enviando…';
+    btn.disabled = true;
+
+    try {
+      await emailjs.sendForm(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, this);
+
+      if (idEncuesta) localStorage.setItem(LS_KEY, 'done');
+      document.getElementById('form').style.display      = 'none';
+      document.getElementById('screen-ok').style.display = 'block';
+      document.getElementById('progress').style.width    = '100%';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+      console.error('EmailJS error:', err);
+      btn.textContent = 'Enviar encuesta →';
+      btn.disabled = false;
+      alert('Hubo un problema al enviar. Por favor intentá de nuevo en unos instantes.');
+    }
+  });
+</script>
+
+</body>
+</html>
